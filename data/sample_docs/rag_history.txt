@@ -1,0 +1,7 @@
+Retrieval-Augmented Generation was introduced to improve factual correctness of LLMs.
+
+It combines external knowledge retrieval with language model generation.
+
+RAG reduces hallucinations and improves response accuracy.
+
+It is widely used in chatbots, document QA systems, and enterprise search.

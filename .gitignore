@@ -16,5 +16,13 @@ venv/
 
 # Environment files
 .env
-data/
+
+# Ignore generated / private data
+data/*
+!data/sample_docs/
+
+# Ignore FAISS vector storage
+storage/
+
+# Ignore test scripts (optional — if you don’t want them public)
 test_loader.py
