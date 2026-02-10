@@ -31,12 +31,17 @@ def chunk_documents(
             chunk_text = text[start:end]
 
             chunks.append({
-                "text": chunk_text,
-                "metadata": {
-                    **metadata,
-                    "chunk_id": chunk_id
-                }
-            })
+    "text": chunk_text,
+    "metadata": {
+        **metadata,
+        "chunk_id": chunk_id,
+        "text": chunk_text,
+        "start": start,      
+        "end": end           
+    }
+})
+
+
 
             chunk_id += 1
             start += chunk_size - overlap
