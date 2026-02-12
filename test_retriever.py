@@ -5,6 +5,6 @@ if __name__ == "__main__":
 
     retriever = Retriever()
 
-    results = retriever.search("What is RAG?")
+    results = retriever.search("Why is chunking important?")
 
     print(results)

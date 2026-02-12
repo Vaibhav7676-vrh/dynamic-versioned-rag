@@ -2,6 +2,8 @@
 from app.embeddings.embedder import Embedder
 from app.vectorstore.faiss_store import FaissStore
 from app.ingestion.version_manager import VersionManager
+from app.retrieval.reranker import Reranker
+
 
 
 class Retriever:
@@ -20,11 +22,14 @@ class Retriever:
 
         # Create FAISS store
         self.store = FaissStore(embedding_dim=384)
+        
+        self.reranker = Reranker()
+
 
         # Load index
         self.store.load(index_path, meta_path)
 
-    def search(self, query: str, k: int = 3, threshold: float = 0.35):
+    def search(self, query: str, k: int = 3, threshold: float = 0.40):
 
         query_embedding = self.embedder.embed_texts([query])
 
@@ -36,4 +41,6 @@ class Retriever:
             if r["score"] >= threshold:
                 filtered_results.append(r)
 
-        return filtered_results
+        reranked = self.reranker.rerank(query, filtered_results)
+        return reranked
+

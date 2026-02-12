@@ -16,3 +16,9 @@ if __name__ == "__main__":
 
     print("\nFINAL ANSWER:\n")
     print(answer)
+    
+    print("\nSources:")
+    for r in results:                 #citations
+        m = r["metadata"]
+        print(f'- {m["source"]} (chunk {m["chunk_id"]}, chars {m["start"]}-{m["end"]})')
+

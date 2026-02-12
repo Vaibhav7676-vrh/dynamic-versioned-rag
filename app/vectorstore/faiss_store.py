@@ -7,7 +7,7 @@ from typing import List, Dict
 class FaissStore:
     def __init__(self, embedding_dim: int):
         self.embedding_dim = embedding_dim
-        self.index = faiss.IndexFlatIP(embedding_dim)  # cosine similarity
+        self.index = faiss.IndexFlatIP(embedding_dim)  
         self.metadata: List[Dict] = []
 
     def add(self, embeddings: np.ndarray, metadatas: List[Dict]):
