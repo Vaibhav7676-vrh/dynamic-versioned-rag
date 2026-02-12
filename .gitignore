@@ -1,28 +1,46 @@
-# macOS
+# ===============================
+# OS
+# ===============================
 .DS_Store
 
+# ===============================
 # Python
+# ===============================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
+# ===============================
 # Virtual environments
+# ===============================
 .venv/
-env/
 venv/
+env/
 
-# IDEs
+# ===============================
+# IDE
+# ===============================
 .vscode/
 .idea/
 
-# Environment files
+# ===============================
+# Environment variables
+# ===============================
 .env
 
-# Ignore generated / private data
+# ===============================
+# Vector DB / generated storage
+# ===============================
+storage/
+
+# ===============================
+# Large or private datasets
+# ===============================
 data/*
 !data/sample_docs/
 
-# Ignore FAISS vector storage
-storage/
-
-# Ignore test scripts (optional — if you don’t want them public)
-test_loader.py
+# ===============================
+# Temporary / scratch scripts
+# ===============================
+check_models.py
