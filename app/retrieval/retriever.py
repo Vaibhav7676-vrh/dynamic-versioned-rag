@@ -29,7 +29,7 @@ class Retriever:
         # Load index
         self.store.load(index_path, meta_path)
 
-    def search(self, query: str, k: int = 3, threshold: float = 0.40):
+    def search(self, query: str, k: int = 3, threshold: float = 0.35):
 
         query_embedding = self.embedder.embed_texts([query])
 
