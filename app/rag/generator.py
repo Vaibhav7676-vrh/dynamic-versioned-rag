@@ -7,20 +7,16 @@ load_dotenv()
 
 class Generator:
     def __init__(self, model: str = "llama-3.1-8b-instant"):
-        """
-        Groq uses an OpenAI-compatible API.
-        We only change base_url and API key.
-        """
         self.client = OpenAI(
             api_key=os.getenv("GROQ_API_KEY"),
             base_url="https://api.groq.com/openai/v1",
         )
         self.model = model
 
-    def generate(self, query: str, contexts: list[str]) -> str:
+    def _build_prompt(self, query: str, contexts: list[str]) -> str:
         context_text = "\n".join(contexts)
 
-        prompt = f"""
+        return f"""
 You are a helpful assistant.
 
 Answer the question using ONLY the context below.
@@ -33,17 +29,37 @@ Question:
 {query}
 """
 
+    def generate(self, query: str, contexts: list[str]) -> str:
+        prompt = self._build_prompt(query, contexts)
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
             )
 
             return response.choices[0].message.content.strip()
 
         except Exception as e:
-            # graceful fallback (VERY IMPORTANT for production)
             return f"LLM call failed: {str(e)}"
+
+    def stream_generate(self, query: str, contexts: list[str]):
+        prompt = self._build_prompt(query, contexts)
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                stream=True,
+            )
+
+            for chunk in response:
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        yield delta.content
+
+        except Exception as e:
+            yield f"\n\nLLM streaming failed: {str(e)}"

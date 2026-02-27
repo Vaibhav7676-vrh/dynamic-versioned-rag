@@ -9,7 +9,7 @@ if __name__ == "__main__":
     retriever = Retriever()
     generator = Generator()
 
-    query = "What is RAG?"
+    query = "What is chunking?"
 
     results = retriever.search(query)
 
