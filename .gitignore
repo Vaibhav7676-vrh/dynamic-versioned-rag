@@ -11,12 +11,13 @@ __pycache__/
 *.pyo
 *.pyd
 
-# ===============================
 # Virtual environments
-# ===============================
 .venv/
 venv/
 env/
+
+# Environment variables
+.env
 
 # ===============================
 # IDE
@@ -25,22 +26,26 @@ env/
 .idea/
 
 # ===============================
-# Environment variables
+# Next.js (Frontend)
 # ===============================
-.env
+frontend/node_modules/
+frontend/.next/
 
 # ===============================
-# Vector DB / generated storage
+# Generated Vector Storage
 # ===============================
 storage/
 
 # ===============================
-# Large or private datasets
+# Large or Private Datasets
 # ===============================
 data/*
 !data/sample_docs/
 
 # ===============================
-# Temporary / scratch scripts
+# Temporary / Scratch Files
 # ===============================
 check_models.py
+
+# OS
+.DS_Store

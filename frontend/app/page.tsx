@@ -144,7 +144,7 @@ export default function Home() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:8000/ingest", {
+      const res = await fetch("http://localhost:8000/ingest-file", {
         method: "POST",
         body: formData,
       });
