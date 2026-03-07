@@ -46,7 +46,7 @@ import asyncio
 @router.post("/query-stream")
 async def query_stream(req: QueryRequest):
     retriever = Retriever()
-    results = retriever.search(req.question, k=req.k)
+    results = retriever.retrieve(req.question, req.k)
     contexts = [r["metadata"]["text"] for r in results]
 
     generator = Generator()

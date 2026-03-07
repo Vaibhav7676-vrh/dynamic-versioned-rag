@@ -27,7 +27,7 @@ export default function Home() {
   const activeChat = chats.find((c) => c.id === activeChatId);
 
   /* ----------------------------
-     Load Chats
+      Load Chats
   ---------------------------- */
   useEffect(() => {
     const stored = localStorage.getItem("dynamic_rag_chats");
@@ -41,12 +41,29 @@ export default function Home() {
     }
   }, []);
 
+  /* ----------------------------
+      Load Version Files
+  ---------------------------- */
+  useEffect(() => {
+    fetch("http://localhost:8000/versions")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.active_version && data.versions[data.active_version]) {
+          setUploadedFiles(data.versions[data.active_version]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ----------------------------
+      Persist Chats
+  ---------------------------- */
   useEffect(() => {
     localStorage.setItem("dynamic_rag_chats", JSON.stringify(chats));
   }, [chats]);
 
   /* ----------------------------
-     Create New Chat
+      Create New Chat
   ---------------------------- */
   const createNewChat = () => {
     const newChat: Chat = {
@@ -135,7 +152,7 @@ export default function Home() {
   };
 
   /* ----------------------------
-     File Upload (Safe)
+     File Upload
   ---------------------------- */
   const uploadFile = async (file: File | undefined) => {
     if (!file) return;
@@ -153,7 +170,12 @@ export default function Home() {
         throw new Error("Upload failed");
       }
 
-      setUploadedFiles((prev) => [file.name, ...prev]);
+      // Reload version data
+      const versionRes = await fetch("http://localhost:8000/versions");
+      const data = await versionRes.json();
+      if (data.active_version && data.versions[data.active_version]) {
+        setUploadedFiles(data.versions[data.active_version]);
+      }
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -187,31 +209,29 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex h-screen text-white">
+    <div className="flex h-screen bg-[#0f0f0f] text-white">
       {/* Sidebar */}
       {sidebarOpen && (
-        <div className="w-72 bg-[#0b1120] border-r border-gray-800 flex flex-col">
-          <div className="p-4 font-semibold border-b border-gray-800 flex justify-between">
+        <div className="w-72 bg-black border-r border-zinc-800 flex flex-col">
+          <div className="p-4 font-semibold border-b border-zinc-800 flex justify-between">
             Dynamic RAG
             <button onClick={() => setSidebarOpen(false)}>✕</button>
           </div>
 
           <button
             onClick={createNewChat}
-            className="m-4 p-2 bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="m-4 p-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition"
           >
             + New Chat
           </button>
 
-          {/* Drag & Drop Zone */}
           <div
             ref={dropRef}
-            className="mx-4 mb-3 p-4 border border-dashed border-gray-600 rounded-lg text-center text-sm text-gray-400"
+            className="mx-4 mb-3 p-4 border border-dashed border-zinc-700 rounded-lg text-center text-sm text-zinc-400"
           >
             Drag & Drop File Here
           </div>
 
-          {/* Manual Upload */}
           <div className="px-4 mb-4">
             <input
               type="file"
@@ -219,13 +239,12 @@ export default function Home() {
                 const file = e.target.files?.[0];
                 if (file) uploadFile(file);
               }}
-              className="text-sm"
+              className="text-sm text-zinc-400"
             />
           </div>
 
-          {/* Uploaded Files */}
-          <div className="px-4 text-sm text-gray-400">
-            <div className="mb-2 font-semibold text-gray-300">
+          <div className="px-4 text-sm text-zinc-400">
+            <div className="mb-2 font-semibold text-zinc-300">
               Uploaded Files
             </div>
             <ul className="space-y-1">
@@ -237,16 +256,15 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* Chat List */}
           <div className="flex-1 overflow-y-auto px-2 mt-4 space-y-2">
             {chats.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => setActiveChatId(chat.id)}
-                className={`p-2 rounded-md cursor-pointer truncate ${
+                className={`p-2 rounded-md cursor-pointer truncate transition ${
                   activeChatId === chat.id
-                    ? "bg-gray-700"
-                    : "bg-gray-800 hover:bg-gray-700"
+                    ? "bg-zinc-800"
+                    : "bg-zinc-900 hover:bg-zinc-800"
                 }`}
               >
                 {chat.title}
@@ -261,13 +279,12 @@ export default function Home() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 bg-[#0b1120]"
+            className="p-2 bg-black border-b border-zinc-800"
           >
             ☰
           </button>
         )}
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-8 py-10 max-w-4xl mx-auto w-full space-y-10">
           {activeChat?.messages.map((msg, i) => (
             <div key={i}>
@@ -281,8 +298,8 @@ export default function Home() {
 
               {msg.role === "assistant" && (
                 <div className="flex items-start gap-3">
-                  <div className="mt-2 w-2 h-2 rounded-full bg-gray-400"></div>
-                  <div className="text-gray-200 leading-7 whitespace-pre-wrap text-[15px]">
+                  <div className="mt-2 w-2 h-2 rounded-full bg-zinc-400"></div>
+                  <div className="text-zinc-200 leading-7 whitespace-pre-wrap text-[15px]">
                     {msg.content}
                   </div>
                 </div>
@@ -291,20 +308,19 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Input */}
-        <div className="p-6 border-t border-gray-800">
+        <div className="p-6 border-t border-zinc-800">
           <div className="max-w-3xl mx-auto flex gap-3">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Message Dynamic RAG..."
-              className="flex-1 bg-gray-900 rounded-xl px-4 py-3 focus:outline-none"
+              className="flex-1 bg-zinc-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-zinc-700"
             />
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="bg-blue-600 px-6 rounded-xl"
+              className="bg-blue-600 px-6 rounded-xl hover:bg-blue-700 transition"
             >
               {loading ? "..." : "Send"}
             </button>
