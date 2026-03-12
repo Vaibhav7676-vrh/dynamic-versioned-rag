@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 from typing import List
+from typing import Optional
 
 
 class QueryRequest(BaseModel):
     question: str
     k: int = 3
+    image:Optional[str] = None
 
 
 class Source(BaseModel):

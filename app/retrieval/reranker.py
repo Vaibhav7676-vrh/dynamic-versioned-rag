@@ -2,17 +2,25 @@ from sentence_transformers import CrossEncoder
 
 
 class Reranker:
+
     def __init__(self):
+
         self.model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
-    def rerank(self, query, results):
-        pairs = [(query, r["metadata"]["text"]) for r in results]
-        scores = self.model.predict(pairs)                      #reranker  : understands which chunks  will get good answer
+    def rerank(self, query, results, top_k=5):
 
-        for r, s in zip(results, scores):
-            r["rerank_score"] = float(s)
+        texts = [r["metadata"]["text"] for r in results]
 
-        # sort descending
-        results.sort(key=lambda x: x["rerank_score"], reverse=True)
+        pairs = [(query, t) for t in texts]
 
-        return results
+        scores = self.model.predict(pairs)
+
+        ranked = sorted(
+            zip(results, scores),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        reranked_results = [r[0] for r in ranked[:top_k]]
+
+        return reranked_results
