@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from pathlib import Path
 import json
+from app.ingestion.multimodal_loader import extract_content
 
 from pypdf import PdfReader
 from docx import Document
@@ -103,25 +104,9 @@ async def ingest_file(file: UploadFile = File(...)):
     # -----------------------------
     # Detect file type
     # -----------------------------
-    suffix = file_path.suffix.lower()
+    text = extract_content(file_path)
 
-    if suffix == ".txt":
-
-        text = extract_text_from_txt(file_path)
-
-    elif suffix == ".pdf":
-
-        text = extract_text_from_pdf(file_path)
-
-    elif suffix == ".docx":
-
-        text = extract_text_from_docx(file_path)
-
-    else:
-
-        return {
-            "error": "Unsupported file type. Use txt, pdf, or docx."
-        }
+    
 
     # -----------------------------
     # Convert to documents
