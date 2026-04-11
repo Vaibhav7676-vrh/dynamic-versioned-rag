@@ -3,9 +3,12 @@ uvicorn
 pydantic
 python-dotenv
 python-multipart
+
 numpy
-sentence-transformers
 faiss-cpu
-torch
+
 pypdf
 python-docx
+pdfplumber
+pymupdf
+pillow
