@@ -1,18 +1,9 @@
 from typing import List
-import numpy as np
-from sentence_transformers import SentenceTransformer
-
 
 class Embedder:
     def __init__(self):
-        self.model = None
+        pass
 
-    def get_model(self):
-        if self.model is None:
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        return self.model
-
-    def embed_texts(self, texts):
-        model = self.get_model()
-        return model.encode(texts)
+    def embed_texts(self, texts: List[str]):
+        # Return dummy embeddings (dimension = 384)
+        return [[0.0]*384 for _ in texts]
