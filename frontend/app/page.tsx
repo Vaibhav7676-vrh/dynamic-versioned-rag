@@ -21,14 +21,13 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // ✅ NEW
 
-  const dropRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeChat = chats.find((c) => c.id === activeChatId);
 
-  /* ----------------------------
-      Load Chats
-  ---------------------------- */
+  /* ---------------------------- */
   useEffect(() => {
     const stored = localStorage.getItem("dynamic_rag_chats");
 
@@ -41,10 +40,12 @@ export default function Home() {
     }
   }, []);
 
-  /* ----------------------------
-      Load Version Files
-  ---------------------------- */
+  /* ---------------------------- */
   useEffect(() => {
+    fetchVersions();
+  }, []);
+
+  const fetchVersions = () => {
     fetch("http://localhost:8000/versions")
       .then((res) => res.json())
       .then((data) => {
@@ -53,18 +54,14 @@ export default function Home() {
         }
       })
       .catch(() => {});
-  }, []);
+  };
 
-  /* ----------------------------
-      Persist Chats
-  ---------------------------- */
+  /* ---------------------------- */
   useEffect(() => {
     localStorage.setItem("dynamic_rag_chats", JSON.stringify(chats));
   }, [chats]);
 
-  /* ----------------------------
-      Create New Chat
-  ---------------------------- */
+  /* ---------------------------- */
   const createNewChat = () => {
     const newChat: Chat = {
       id: uuidv4(),
@@ -76,9 +73,7 @@ export default function Home() {
     setActiveChatId(newChat.id);
   };
 
-  /* ----------------------------
-     Send Message (Streaming)
-  ---------------------------- */
+  /* ---------------------------- */
   const sendMessage = async () => {
     if (!input.trim() || !activeChatId) return;
 
@@ -115,7 +110,11 @@ export default function Home() {
       const response = await fetch("http://localhost:8000/query-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, k: 5 }),
+        body: JSON.stringify({
+          question,
+          k: 5,
+          file_name: selectedFile?.name || null, // ✅ STEP 4
+        }),
       });
 
       if (!response.body) return;
@@ -151,11 +150,11 @@ export default function Home() {
     setLoading(false);
   };
 
-  /* ----------------------------
-     File Upload
-  ---------------------------- */
+  /* ---------------------------- */
   const uploadFile = async (file: File | undefined) => {
     if (!file) return;
+
+    setSelectedFile(file); // ✅ show chip
 
     const formData = new FormData();
     formData.append("file", file);
@@ -166,47 +165,26 @@ export default function Home() {
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error("Upload failed");
-      }
+      if (!res.ok) throw new Error("Upload failed");
 
-      // Reload version data
-      const versionRes = await fetch("http://localhost:8000/versions");
-      const data = await versionRes.json();
-      if (data.active_version && data.versions[data.active_version]) {
-        setUploadedFiles(data.versions[data.active_version]);
-      }
+      fetchVersions();
     } catch (err) {
       console.error(err);
       alert("Upload failed");
     }
   };
 
-  /* ----------------------------
-     Drag & Drop
-  ---------------------------- */
-  useEffect(() => {
-    const dropArea = dropRef.current;
-    if (!dropArea) return;
+  /* ---------------------------- */
+  const getFileIcon = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase();
 
-    const handleDragOver = (e: DragEvent) => {
-      e.preventDefault();
-    };
+    if (["png", "jpg", "jpeg"].includes(ext || "")) return "🖼️";
+    if (["pdf"].includes(ext || "")) return "📄";
+    if (["csv", "xls"].includes(ext || "")) return "📊";
+    if (["txt"].includes(ext || "")) return "📄";
 
-    const handleDrop = (e: DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer?.files?.[0];
-      if (file) uploadFile(file);
-    };
-
-    dropArea.addEventListener("dragover", handleDragOver);
-    dropArea.addEventListener("drop", handleDrop);
-
-    return () => {
-      dropArea.removeEventListener("dragover", handleDragOver);
-      dropArea.removeEventListener("drop", handleDrop);
-    };
-  }, []);
+    return "📁";
+  };
 
   return (
     <div className="flex h-screen bg-[#0f0f0f] text-white">
@@ -225,35 +203,22 @@ export default function Home() {
             + New Chat
           </button>
 
-          <div
-            ref={dropRef}
-            className="mx-4 mb-3 p-4 border border-dashed border-zinc-700 rounded-lg text-center text-sm text-zinc-400"
-          >
-            Drag & Drop File Here
-          </div>
-
-          <div className="px-4 mb-4">
-            <input
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) uploadFile(file);
-              }}
-              className="text-sm text-zinc-400"
-            />
-          </div>
-
           <div className="px-4 text-sm text-zinc-400">
             <div className="mb-2 font-semibold text-zinc-300">
               Uploaded Files
             </div>
-            <ul className="space-y-1">
-              {uploadedFiles.map((file, i) => (
-                <li key={i} className="truncate">
-                  • {file}
-                </li>
-              ))}
-            </ul>
+
+            {uploadedFiles.length === 0 ? (
+              <p className="text-zinc-500">No files uploaded</p>
+            ) : (
+              <ul className="space-y-1">
+                {uploadedFiles.map((file, i) => (
+                  <li key={i} className="truncate">
+                    • {file}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto px-2 mt-4 space-y-2">
@@ -261,7 +226,7 @@ export default function Home() {
               <div
                 key={chat.id}
                 onClick={() => setActiveChatId(chat.id)}
-                className={`p-2 rounded-md cursor-pointer truncate transition ${
+                className={`p-2 rounded-md cursor-pointer truncate ${
                   activeChatId === chat.id
                     ? "bg-zinc-800"
                     : "bg-zinc-900 hover:bg-zinc-800"
@@ -276,15 +241,6 @@ export default function Home() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col">
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 bg-black border-b border-zinc-800"
-          >
-            ☰
-          </button>
-        )}
-
         <div className="flex-1 overflow-y-auto px-8 py-10 max-w-4xl mx-auto w-full space-y-10">
           {activeChat?.messages.map((msg, i) => (
             <div key={i}>
@@ -299,7 +255,7 @@ export default function Home() {
               {msg.role === "assistant" && (
                 <div className="flex items-start gap-3">
                   <div className="mt-2 w-2 h-2 rounded-full bg-zinc-400"></div>
-                  <div className="text-zinc-200 leading-7 whitespace-pre-wrap text-[15px]">
+                  <div className="text-zinc-200 whitespace-pre-wrap">
                     {msg.content}
                   </div>
                 </div>
@@ -308,22 +264,57 @@ export default function Home() {
           ))}
         </div>
 
+        {/* INPUT */}
         <div className="p-6 border-t border-zinc-800">
-          <div className="max-w-3xl mx-auto flex gap-3">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Message Dynamic RAG..."
-              className="flex-1 bg-zinc-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-zinc-700"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={loading}
-              className="bg-blue-600 px-6 rounded-xl hover:bg-blue-700 transition"
-            >
-              {loading ? "..." : "Send"}
-            </button>
+          <div className="max-w-3xl mx-auto flex flex-col gap-2">
+
+            {/* FILE CHIP */}
+            {selectedFile && (
+              <div className="flex items-center justify-between bg-zinc-800 px-3 py-2 rounded-lg text-sm">
+                <span>
+                  {getFileIcon(selectedFile.name)} {selectedFile.name}
+                </span>
+
+                <button onClick={() => setSelectedFile(null)}>✕</button>
+              </div>
+            )}
+
+            <div className="flex gap-3 items-center">
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadFile(file);
+                  e.target.value = "";
+                }}
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-zinc-800 px-4 py-2 rounded-xl"
+              >
+                +
+              </button>
+
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Ask anything..."
+                className="flex-1 bg-zinc-900 rounded-xl px-4 py-3"
+              />
+
+              <button
+                onClick={sendMessage}
+                disabled={loading}
+                className="bg-blue-600 px-6 rounded-xl"
+              >
+                {loading ? "..." : "Send"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

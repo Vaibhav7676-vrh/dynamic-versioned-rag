@@ -4,26 +4,15 @@ from sentence_transformers import SentenceTransformer
 
 
 class Embedder:
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        """
-        Loads a sentence-transformer model.
-        """
-        self.model = SentenceTransformer(model_name)
+    def __init__(self):
+        self.model = None
 
-    def embed_texts(self, texts: List[str]) -> np.ndarray:
-        """
-        Convert a list of texts into embeddings.
+    def get_model(self):
+        if self.model is None:
+            from sentence_transformers import SentenceTransformer
+            self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        return self.model
 
-        Args:
-            texts: List of chunk texts
-
-        Returns:
-            Numpy array of embeddings (num_texts, embedding_dim)
-        """
-        embeddings = self.model.encode(
-            texts,
-            show_progress_bar=False,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
-        return embeddings
+    def embed_texts(self, texts):
+        model = self.get_model()
+        return model.encode(texts)
