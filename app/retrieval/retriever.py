@@ -18,47 +18,64 @@ class Retriever:
 
     def load_active_version(self):
         """
-        Loads the active FAISS index based on versions.json
+        Safe loading (no crash if files missing)
         """
 
         if not self.versions_file.exists():
-            raise Exception("versions.json not found")
-
-        versions_data = json.loads(self.versions_file.read_text())
-
-        active_version = versions_data.get("active_version")
-
-        if not active_version:
-            raise Exception("No active version found")
-
-        if active_version == self.current_version:
+            print("No versions.json found → skipping retrieval")
             return
 
-        index_path = self.storage_dir / active_version / "index.faiss"
-        meta_path = self.storage_dir / active_version / "metadata.pkl"
+        try:
+            versions_data = json.loads(self.versions_file.read_text())
+            active_version = versions_data.get("active_version")
 
-        embedding_dim = 384  # dimension for MiniLM
+            if not active_version:
+                print("No active version found")
+                return
 
-        self.store = FaissStore(embedding_dim)
-        self.store.load(str(index_path), str(meta_path))
+            if active_version == self.current_version:
+                return
 
-        self.current_version = active_version
+            index_path = self.storage_dir / active_version / "index.faiss"
+            meta_path = self.storage_dir / active_version / "metadata.pkl"
+
+            if not index_path.exists() or not meta_path.exists():
+                print("FAISS files missing → skipping load")
+                return
+
+            embedding_dim = 384
+
+            self.store = FaissStore(embedding_dim)
+            self.store.load(str(index_path), str(meta_path))
+
+            self.current_version = active_version
+
+        except Exception as e:
+            print("Error loading vector store:", e)
+            self.store = None
 
     def retrieve(self, query, k=5):
         """
-        Retrieves top-k relevant chunks for the query
+        Safe retrieval (never crashes)
         """
 
-        # Load latest version automatically
-        self.load_active_version()
+        try:
+            self.load_active_version()
 
-        # Convert query to embedding
-        query_embedding = self.embedder.embed_texts([query])
+            # No store → return empty
+            if self.store is None:
+                print("No vector store available")
+                return []
 
-        # Search FAISS
-        results = self.store.search(
-            query_embedding,
-            top_k=k
-        )
+            query_embedding = self.embedder.embed_texts([query])
 
-        return results
+            results = self.store.search(
+                query_embedding,
+                top_k=k
+            )
+
+            return results
+
+        except Exception as e:
+            print("Retriever error:", e)
+            return []

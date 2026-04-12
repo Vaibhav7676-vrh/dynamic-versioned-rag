@@ -17,84 +17,96 @@ router = APIRouter()
 @router.post("/query-stream")
 async def query_stream(req: QueryRequest):
 
-    # -----------------------------
-    # Initialize components
-    # -----------------------------
-    retriever = Retriever()
-    router_model = SelfRouter()
+    try:
+        # -----------------------------
+        # Initialize components
+        # -----------------------------
+        retriever = Retriever()
+        router_model = SelfRouter()
 
-    text_model = TextLLM()
-    reasoning_model = ReasoningModel()
-    vision_model = VisionModel()
+        text_model = TextLLM()
+        reasoning_model = ReasoningModel()
+        vision_model = VisionModel()
 
-    # -----------------------------
-    # Route the query
-    # -----------------------------
-    decision = router_model.route(req.question)
+        # -----------------------------
+        # Route the query
+        # -----------------------------
+        decision = router_model.route(req.question)
+        print("Router decision:", decision)
 
-    print("Router decision:", decision)
+        contexts = []
 
-    contexts = []
+        # -----------------------------
+        # Retrieval (SAFE)
+        # -----------------------------
+        if decision != "vlm":
 
-    # -----------------------------
-    # Retrieval only for text models
-    # -----------------------------
-    if decision != "vlm":
-        results = retriever.retrieve(req.question, k=req.k)
+            results = retriever.retrieve(req.question, k=req.k)
 
-        contexts = [
-            r["metadata"]["text"]
-            for r in results
-        ]
+            if not results:
+                print("No retrieval results → using fallback context")
+                contexts = ["No context available"]
+            else:
+                contexts = [
+                    r.get("metadata", {}).get("text", "")
+                    for r in results
+                ]
 
-    # -----------------------------
-    # Model selection
-    # -----------------------------
-    if decision == "reasoning":
+        # -----------------------------
+        # Model selection
+        # -----------------------------
+        if decision == "reasoning":
 
-        answer = reasoning_model.generate(
-            req.question,
-            contexts
-        )
+            answer = reasoning_model.generate(
+                req.question,
+                contexts
+            )
 
-    elif decision == "vlm":
+        elif decision == "vlm":
 
-        # If no image provided fallback
-        if not req.image:
+            if not req.image:
+                print("No image provided → fallback to TextLLM")
 
-            print("No image provided → fallback to TextLLM")
+                answer = text_model.generate(
+                    req.question,
+                    contexts
+                )
+            else:
+                answer = vision_model.generate(
+                    req.question,
+                    req.image
+                )
+
+        else:
 
             answer = text_model.generate(
                 req.question,
                 contexts
             )
 
-        else:
+        # -----------------------------
+        # Streaming response
+        # -----------------------------
+        async def stream():
 
-            answer = vision_model.generate(
-                req.question,
-                req.image
-            )
+            words = answer.split(" ")
 
-    else:
+            for word in words:
+                yield word + " "
+                await asyncio.sleep(0.02)
 
-        answer = text_model.generate(
-            req.question,
-            contexts
+        return StreamingResponse(
+            stream(),
+            media_type="text/plain",
         )
 
-    # -----------------------------
-    # Streaming response
-    # -----------------------------
-    async def stream():
+    except Exception as e:
+        print("ERROR in /query-stream:", e)
 
-        words = answer.split(" ")
+        async def error_stream():
+            yield f"Error: {str(e)}"
 
-        for word in words:
-            yield word + " "
-            await asyncio.sleep(0.02)
-
-    return StreamingResponse(
-        stream(),
-        media_type="text/plain",
-    )
+        return StreamingResponse(
+            error_stream(),
+            media_type="text/plain",
+        )
