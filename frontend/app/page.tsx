@@ -267,22 +267,36 @@ export default function Home() {
         </div>
 
         {/* INPUT */}
-        <div className="p-6 border-t border-zinc-800">
-          <div className="max-w-3xl mx-auto flex gap-3 items-center">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Ask anything..."
-              className="flex-1 bg-zinc-900 rounded-xl px-4 py-3"
-            />
+<div className="p-6 border-t border-zinc-800">
+  <div className="max-w-3xl mx-auto flex gap-3 items-center">
 
-            <button
-              onClick={sendMessage}
-              disabled={loading}
-              className="bg-blue-600 px-6 rounded-xl"
-            >
-              {loading ? "..." : "Send"}
+    {/* 📎 Upload button */}
+    <label className="cursor-pointer bg-zinc-800 px-3 py-2 rounded-xl hover:bg-zinc-700">
+      📎
+      <input
+        type="file"
+        className="hidden"
+        onChange={(e) => uploadFile(e.target.files?.[0])}
+      />
+    </label>
+
+    {/* 💬 Input */}
+    <input
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+      placeholder="Ask anything..."
+      className="flex-1 bg-zinc-900 rounded-xl px-4 py-3"
+    />
+
+    {/* 🚀 Send */}
+    <button
+      onClick={sendMessage}
+      disabled={loading}
+      className="bg-blue-600 px-6 rounded-xl"
+    >
+      {loading ? "..." : "Send"}
+  
             </button>
           </div>
         </div>
