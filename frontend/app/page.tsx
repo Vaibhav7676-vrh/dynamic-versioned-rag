@@ -103,15 +103,15 @@ export default function Home() {
 
     try {
       const response = await fetch(
-        "https://retrievai.onrender.com/query-stream",
+        `${process.env.NEXT_PUBLIC_API_URL}/query-stream`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            question,
-            k: 5,
-            file_name: selectedFile?.name || null,
-          }),
+  question,
+  k: 5,
+  image: null,
+})
         }
       );
 
@@ -168,7 +168,7 @@ export default function Home() {
 
     try {
       const res = await fetch(
-        "https://retrievai.onrender.com/ingest-file",
+        `${process.env.NEXT_PUBLIC_API_URL}/ingest-file`,
         {
           method: "POST",
           body: formData,
